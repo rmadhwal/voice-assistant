@@ -98,26 +98,25 @@ def parse_command(final_output):
         speak("Disabling Voice Commands, Goodbye")
         global voice_commands_enabled
         voice_commands_enabled = False
-    elif "song" in words or "songs" in words:
-        if song_commands["play_command"] in words:
-            speak("playing song")
-            os.system("cmus-remote -p")
-        elif song_commands["pause_command"] or song_commands["cancel_command"] in words:
-            speak("pausing song")
-            os.system("cmus-remote -u")
-        elif song_commands["next_command"] in words:
-            speak("playing next song")
-            os.system("cmus-remote -n")
-        elif song_commands["rewind_command"] in words:
-            os.system("cmus-remote -R")
-            speak("rewinding song")
-        elif song_commands["back_command"] in words:
-            os.system("cmus-remote -r")
-            speak("rewinding song")
-        else:
-            speak("What song would you like to play?")
-            global waiting_for_song
-            waiting_for_song = True
+    if song_commands["play_command"] in words:
+        speak("playing song")
+        os.system("cmus-remote -p")
+    elif song_commands["pause_command"] or song_commands["cancel_command"] in words:
+        speak("pausing song")
+        os.system("cmus-remote -u")
+    elif song_commands["next_command"] in words:
+        speak("playing next song")
+        os.system("cmus-remote -n")
+    elif song_commands["rewind_command"] in words:
+        os.system("cmus-remote -R")
+        speak("rewinding song")
+    elif song_commands["back_command"] in words:
+        os.system("cmus-remote -r")
+        speak("rewinding song")
+    elif song_commands["search_command"] in words:
+        speak("What song would you like to play?")
+        global waiting_for_song
+        waiting_for_song = True
     elif "speakers" in words:
         if speaker_commands["off_command"] in words:
             speak("turning off speakers")
