@@ -71,16 +71,18 @@ def are_speakers_off():
 
 
 def enable_voice_commands(final_output):
-    if are_speakers_off():
-        turn_on_speakers()
+    try:
+        if are_speakers_off():
+            turn_on_speakers()
+    except:
+        print("couldnt check speaker for status")
     global command_failed
     words = final_output.split(" ")
     if bool(set(greetings) & set(words)):
-        if ai_name in words:
-            speak("Greetings Rohan, Voice Commands Enabled")
-            global voice_commands_enabled
-            voice_commands_enabled = True
-            return
+        speak("Greetings Rohan, Voice Commands Enabled")
+        global voice_commands_enabled
+        voice_commands_enabled = True
+        return
     command_failed = True
 
 
