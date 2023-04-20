@@ -73,12 +73,15 @@ def are_speakers_off():
 def enable_voice_commands(final_output):
     if are_speakers_off():
         turn_on_speakers()
+    global command_failed
     words = final_output.split(" ")
     if bool(set(greetings) & set(words)):
         if ai_name in words:
             speak("Greetings Rohan, Voice Commands Enabled")
             global voice_commands_enabled
             voice_commands_enabled = True
+            return
+    command_failed = True
 
 
 def turn_off_speakers():
@@ -101,7 +104,7 @@ def parse_command(final_output):
     if song_commands["play_command"] in words:
         speak("playing song")
         os.system("cmus-remote -p")
-    elif song_commands["pause_command"] or song_commands["cancel_command"] in words:
+    elif song_commands["pause_command"] in words or song_commands["cancel_command"] in words:
         speak("pausing song")
         os.system("cmus-remote -u")
     elif song_commands["next_command"] in words:
@@ -144,6 +147,9 @@ def search_and_play_song(final_output):
 def see_if_command_exists():
     global accepted_output
     global process1
+    global waiting_for_song
+    global last_accepted_output
+    global last_output_time
 
     while process1.poll() is None:
         if accepted_output != "":
@@ -155,6 +161,9 @@ def see_if_command_exists():
             else:
                 search_and_play_song(accepted_output)
             accepted_output = ""
+            if command_failed:
+                last_accepted_output = []
+                last_output_time = time.time()
 
 
 def listen_for_commands():
@@ -166,7 +175,6 @@ def listen_for_commands():
     global last_accepted_output
     global last_output_time
     global voice_commands_enabled
-    global waiting_for_song
     global accepted_output
     global process1
     global command_failed
@@ -209,11 +217,9 @@ def listen_for_commands():
                 previous_outputs = new_previous_outputs
                 if empty_outputs > 20 and len(previous_outputs) > 1:
                     accepted_output = previous_outputs[-1]
-                    if not command_failed:
-                        last_accepted_output = list(
-                            filter(lambda x: x != 'song' and x != 'speakers', previous_outputs[-1].split(" ")))
-                        last_output_time = time.time()
-                        command_failed = False
+                    last_accepted_output = list(
+                        filter(lambda x: x != 'song' and x != 'speakers', previous_outputs[-1].split(" ")))
+                    last_output_time = time.time()
                     previous_outputs = []
             final_outputs = []
             partial_outputs = []
