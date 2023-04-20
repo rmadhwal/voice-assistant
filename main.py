@@ -1,5 +1,6 @@
 import os
 import socket
+import subprocess
 import sys
 import json
 import time
@@ -57,8 +58,16 @@ def turn_on_speakers():
     command = "kefctl -H 192.168.0.100 -i aux"
     os.system(command)
 
+
+def are_speakers_off():
+    command = "kefctl -H 192.168.0.100 -s"
+    output = subprocess.check_output(command, shell=True)
+    return "Power: Off" in output
+
+
 def enable_voice_commands(final_output):
-    turn_on_speakers()
+    if are_speakers_off():
+        turn_on_speakers()
     words = final_output.split(" ")
     if bool(set(greetings) & set(words)):
         if ai_name in words:
