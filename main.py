@@ -31,7 +31,7 @@ command_failed = False
 greetings = ["hello", "hi", "hey", "hola", "whatsup", "sup"]
 song_commands = {"play_command": "play", "pause_command": "pause", "cancel_command": "cancel", "next_command": "next",
                  "rewind_command": "rewind", "back_command": "back", "search_command": "search"}
-speaker_commands = {"off_command": "off"}
+speaker_commands = {"off_command": "off", "on_command": "on", "bluetooth_command": "bluetooth"}
 ai_name = "buddy"
 disable_command = ["disable", "goodbye", "bye", "later"]
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -129,6 +129,9 @@ def parse_command(final_output):
         elif speaker_commands["bluetooth_command"] in words:
             speak("enabling bluetooth")
             turn_bt_mode_on_speakers()
+        elif speaker_commands["on_command"] in words:
+            speak("turning on speakers")
+            turn_on_speakers()
     else:
         command_failed = True
         speak("I did not recognize that command, please try again")
