@@ -30,7 +30,7 @@ song_is_playing = False
 command_failed = False
 greetings = ["hello", "hi", "hey", "hola", "whatsup", "sup"]
 song_commands = {"play_command": "play", "pause_command": "pause", "cancel_command": "cancel", "next_command": "next",
-                 "rewind_command": "rewind", "back_command": "back", "search_command": "search"}
+                 "rewind_command": "rewind", "back_command": "back", "search_command": "search", "shuffle_command": "shuffle"}
 speaker_commands = {"off_command": "off", "on_command": "on", "bluetooth_command": "bluetooth"}
 ai_name = "buddy"
 disable_command = ["disable", "goodbye", "bye", "later"]
@@ -103,7 +103,7 @@ def parse_command(final_output):
         speak("Disabling Voice Commands, Goodbye")
         global voice_commands_enabled
         voice_commands_enabled = False
-    if song_commands["play_command"] in words:
+    elif song_commands["play_command"] in words:
         speak("playing song")
         os.system("cmus-remote -p")
     elif song_commands["pause_command"] in words or song_commands["cancel_command"] in words:
@@ -122,6 +122,9 @@ def parse_command(final_output):
         speak("What song would you like to play?")
         global waiting_for_song
         waiting_for_song = True
+    elif song_commands["shuffle_command"] in words:
+        speak("Toggling Shuffle")
+        os.system("cmus-remote -S")
     elif "speakers" in words:
         if speaker_commands["off_command"] in words:
             speak("turning off speakers")
