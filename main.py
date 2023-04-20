@@ -2,6 +2,7 @@ import os
 import socket
 import sys
 import json
+import time
 
 import ffmpeg
 import numpy
@@ -34,6 +35,10 @@ s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
 local_ip_address = s.getsockname()[0]
 host = '192.168.0.100'
 port = 50001
+previous_outputs = []
+empty_outputs = 0
+last_output_time = time.time()
+last_accepted_output = ""
 
 language = 'en'
 rtp_address = 'rtp://' + local_ip_address + ':5555'
@@ -78,7 +83,7 @@ def parse_command(final_output):
         speak("Disabling Voice Commands, Goodbye")
         global voice_commands_enabled
         voice_commands_enabled = False
-    elif "song" in words:
+    elif "song" in words or "songs" in words:
         if song_commands["play_command"] in words:
             speak("playing song")
             os.system("cmus-remote -p")
@@ -124,60 +129,51 @@ def search_and_play_song(final_output):
 while process1.poll() is None:
     packet = process1.stdout.read(packet_size)
     try:
-        arr = numpy.fromstring(packet, dtype="int16")
-        abs_sum = numpy.sum(numpy.absolute(arr))
-        if abs_sum > SILENCE_THRESHOLD:
-            abs_sum_silence_counter = 0
-            if silence:
-                oarr = numpy.arange(1, dtype='int16')
-                silence = False
+        if rec.AcceptWaveform(packet):
+            final_outputs += [json.loads(rec.Result())['text']]
         else:
-            if not silence:
-                abs_sum_silence_counter += 1
-                if abs_sum_silence_counter > SILENCE_CONSECUTIVE:
-                    for s in sound:
-                        if rec.AcceptWaveform(s):
-                            final_outputs += [json.loads(rec.Result())['text']]
-                        else:
-                            partial_outputs += [json.loads(rec.PartialResult())['partial']]
-                        final_outputs = list(filter(None, final_outputs))
-                        partial_outputs = list(filter(None, partial_outputs))
-                    final_output = ""
-                    if len(final_outputs) > 0:
-                        max_len = 0
-                        for output in final_outputs:
-                            if len(output) > max_len:
-                                final_output = output
-                                max_len = len(output)
-                    elif len(partial_outputs) > 0:
-                        max_len = 0
-                        for output in partial_outputs:
-                            if len(output) > max_len:
-                                final_output = output
-                                max_len = len(output)
-                        if final_output == last_partial_output:
-                            final_output = ""
-                        else:
-                            last_partial_output = final_output
-                    if final_output != "":
-                        if not voice_commands_enabled:
-                            enable_voice_commands(final_output)
-                        elif not waiting_for_song:
-                            parse_command(final_output)
-                        else:
-                            search_and_play_song(final_output)
-                    final_outputs = []
-                    partial_outputs = []
-                    sound = []
-                    silence = True
-        if not silence:
-            sound += [packet]
-        else:
-            if len(sound) < SILENCE_CAPTURE_WIDTH:
-                sound += [packet]
+            partial_outputs += [json.loads(rec.PartialResult())['partial']]
+        final_outputs = list(filter(None, final_outputs))
+        partial_outputs = list(filter(None, partial_outputs))
+        final_output = ""
+        if len(final_outputs) > 0:
+            max_len = 0
+            for output in final_outputs:
+                if len(output) > max_len:
+                    final_output = output
+                    max_len = len(output)
+        elif len(partial_outputs) > 0:
+            max_len = 0
+            for output in partial_outputs:
+                if len(output) > max_len:
+                    final_output = output
+                    max_len = len(output)
+            if final_output == last_partial_output:
+                final_output = ""
             else:
-                sound.pop(0)
-                sound += [packet]
+                last_partial_output = final_output
+        if final_output != "":
+            previous_outputs += [final_output]
+        elif len(previous_outputs) > 1:
+            empty_outputs += 1
+            new_previous_outputs = []
+            for i in range(len(previous_outputs)):
+                words = previous_outputs[i].split(" ")
+                if not(bool(set(last_accepted_output) & set(words))) or time.time() - last_output_time > 20:
+                    new_previous_outputs.append(previous_outputs[i])
+            previous_outputs = new_previous_outputs
+            if empty_outputs > 20 and len(previous_outputs) > 1:
+                if not voice_commands_enabled:
+                    enable_voice_commands(previous_outputs[-1])
+                elif not waiting_for_song:
+                    parse_command(previous_outputs[-1])
+                else:
+                    search_and_play_song(previous_outputs[-1])
+                last_accepted_output = list(filter(lambda x : x != 'song' and x != 'speakers', previous_outputs[-1].split(" ")))
+                last_output_time = time.time()
+                previous_outputs = []
+        final_outputs = []
+        partial_outputs = []
     except socket.error:
         process1.stdout.close()
         process1.wait()
