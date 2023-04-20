@@ -62,7 +62,7 @@ def turn_on_speakers():
 def are_speakers_off():
     command = "kefctl -H 192.168.0.100 -s"
     output = subprocess.check_output(command, shell=True)
-    return b'Power: Off' in output
+    return b'Power:   Off' in output
 
 
 def enable_voice_commands(final_output):
