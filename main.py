@@ -33,7 +33,7 @@ song_commands = {"play_command": "play", "pause_command": "pause", "cancel_comma
                  "rewind_command": "rewind", "back_command": "back", "search_command": "search"}
 speaker_commands = {"off_command": "off"}
 ai_name = "buddy"
-disable_command = ["disable", "goodbye"]
+disable_command = ["disable", "goodbye", "bye", "later"]
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
 local_ip_address = s.getsockname()[0]
