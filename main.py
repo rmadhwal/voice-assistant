@@ -25,12 +25,15 @@ voice_commands_enabled = False
 waiting_for_song = False
 song_is_playing = False
 greetings = ["hello", "hi", "hey", "hola", "whatsup", "sup"]
-song_commands = {"play_command": "play", "pause_command": "pause", "next_command": "next", "rewind_command": "rewind", "back_command": "back", "search_command": "search"}
+song_commands = {"play_command": "play", "pause_command": "pause", "cancel_command": "cancel", "next_command": "next", "rewind_command": "rewind", "back_command": "back", "search_command": "search"}
+speaker_commands = {"off_command": "off"}
 ai_name = "buddy"
 disable_command = ["disable", "goodbye"]
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
 local_ip_address = s.getsockname()[0]
+host = '192.168.0.100'
+port = 50001
 
 language = 'en'
 rtp_address = 'rtp://' + local_ip_address + ':5555'
@@ -44,13 +47,31 @@ def speak(text):
     textobj.save("temp.mp3")
     os.system("mpg321 temp.mp3")
 
+
+def turn_on_speakers():
+    command = "kefctl -H 192.168.0.100 -i aux"
+    os.system(command)
+
 def enable_voice_commands(final_output):
+    turn_on_speakers()
     words = final_output.split(" ")
     if bool(set(greetings) & set(words)):
         if ai_name in words:
             speak("Greetings Rohan, Voice Commands Enabled")
             global voice_commands_enabled
             voice_commands_enabled = True
+
+
+def turn_off_speakers():
+    command = "kefctl -H 192.168.0.100 -o"
+    os.system(command)
+
+
+def turn_bt_mode_on_speakers():
+    command = "kefctl -H 192.168.0.100 -i bluetooth"
+    os.system(command)
+
+
 def parse_command(final_output):
     words = final_output.split(" ")
     if bool(set(disable_command) & set(words)):
@@ -61,7 +82,7 @@ def parse_command(final_output):
         if song_commands["play_command"] in words:
             speak("playing song")
             os.system("cmus-remote -p")
-        elif song_commands["pause_command"] in words:
+        elif song_commands["pause_command"] or song_commands["cancel_command"] in words:
             speak("pausing song")
             os.system("cmus-remote -u")
         elif song_commands["next_command"] in words:
@@ -77,18 +98,27 @@ def parse_command(final_output):
             speak("What song would you like to play?")
             global waiting_for_song
             waiting_for_song = True
+    elif "speakers" in words:
+        if speaker_commands["off_command"] in words:
+            speak("turning off speakers")
+            turn_off_speakers()
+        elif speaker_commands["bluetooth_command"] in words:
+            speak("enabling bluetooth")
+            turn_bt_mode_on_speakers()
     else:
         speak("I did not recognize that command, please try again")
 
 
 def search_and_play_song(final_output):
+    words = final_output.split(" ")
+    global waiting_for_song
+    if "nevermind" in words or "cancel" in words:
+        waiting_for_song = False
+        return
     speak("playing song " + final_output)
     command = "cmus-remote -C /\"" + final_output + "\" win-activate"
     os.system(command)
-    global waiting_for_song
     waiting_for_song = False
-    global song_is_playing
-    song_is_playing = True
 
 
 while process1.poll() is None:
